@@ -5,6 +5,7 @@ from flask import Flask, request, send_from_directory
 from werkzeug.utils import secure_filename  
 from PIL import Image, ImageDraw, ImageFont
 from nudenet import NudeClassifier
+from videoprops import get_video_properties
 
 
 app = Flask(__name__)
@@ -19,8 +20,8 @@ def home():
 def static_dir(path):
     return send_from_directory('static', path)
 
-@app.route('/upload', methods=['POST'])
-def file_upload():
+@app.route('/upload/files', methods=['POST'])
+def image_inference():
     uploadedFiles = request.files.getlist('file[]')
     original_files = []
     result = []
@@ -30,8 +31,6 @@ def file_upload():
         original_files.append('./files/'+secure_filename(f.filename))
 
     preds = classifier.classify(original_files, batch_size=32)
-
-    print(preds)
 
     for filename in preds:
         pred = preds.get(filename)
@@ -50,7 +49,7 @@ def file_upload():
             w, h = draw.textsize(msg, font=font)
             draw.text(((W-w)/2, (H-h)/2), msg, (255, 0, 0), font=font)
             dstImg.save('./static/'+secure_filename(f.filename))
-            result.append({'unsafe': True, 'url': request.host_url+'/static/'+secure_filename(f.filename)})
+            result.append({'unsafe': True, 'url': request.host_url+'static/'+secure_filename(f.filename)})
 
         os.remove(filename)
 
@@ -60,7 +59,52 @@ def file_upload():
         mimetype='application/json'
     )
     return response
-  
+
+@app.route('/upload/video', methods=['POST'])
+def video_inference():
+    f = request.files['file']
+    path = './files/'+secure_filename(f.filename)
+    filename = f.filename.split('.')[0]
+
+    f.save(path)
+
+    props = get_video_properties(path)
+    W, H = int(props['width']), int(props['height'])
+    
+    preds = classifier.classify_video(path)
+    preds = preds.get('preds')
+    unsafe, safe = 0, 0
+
+    for pred in preds:
+        unsafe += preds.get(pred)['unsafe']
+        safe += preds.get(pred)['safe']
+
+    if safe > unsafe:
+        result = {
+            'unsafe': False
+        }
+    else:
+        img = Image.new('RGB', (W, H), color='black')
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.truetype('./font/SpoqaHanSansNeo-Regular.ttf', 60)
+        msg = 'Censored'
+        w, h = draw.textsize(msg, font=font)
+        draw.text(((W-w)/2, (H-h)/2), msg, (255, 0, 0), font=font)
+        img.save(f'./static/{filename}.png')
+        result = {
+            'unsafe': True,
+            'url': request.host_url+'static/'+filename+'.png'
+        }
+
+    os.remove(path)
+
+    response = app.response_class(
+        response=json.dumps(result),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
+
 
 if __name__ == '__main__':
     app.run()
