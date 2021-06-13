@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python 3.6
         uses: actions/setup-python@v1
         with:
-          python-version: "3.9"
+          python-version: "3.6"
 
       - name: Get pip cache dir
         id: pip-cache
@@ -82,7 +82,7 @@ jobs:
       # Create the Elastic Beanstalk application
       - name: Create EBS application
         run: |
-          eb init -p python-3.9 youmo --region ap-northeast-2
+          eb init -p python-3.6 youmo --region ap-northeast-2
       # Deploy to (or Create) the Elastic Beanstalk environment
       - name: Create test environment & deploy
         run: |
