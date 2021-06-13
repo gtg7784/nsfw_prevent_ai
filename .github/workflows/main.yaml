@@ -12,11 +12,11 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE
       - uses: actions/checkout@v2
 
-      # Set up Python 3.6 environment
-      - name: Set up Python 3.6
+      # Set up Python 3.7 environment
+      - name: Set up Python 3.7
         uses: actions/setup-python@v1
         with:
-          python-version: "3.6"
+          python-version: "3.7"
 
       - name: Get pip cache dir
         id: pip-cache
@@ -47,11 +47,11 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE
       - uses: actions/checkout@v2
 
-      # Set up Python 3.6 environment
-      - name: Set up Python 3.6
+      # Set up Python 3.7 environment
+      - name: Set up Python 3.7
         uses: actions/setup-python@v1
         with:
-          python-version: "3.6"
+          python-version: "3.7"
 
       # Set up cache for pip
       - name: Get pip cache dir
@@ -82,7 +82,7 @@ jobs:
       # Create the Elastic Beanstalk application
       - name: Create EBS application
         run: |
-          eb init -p python-3.6 youmo --region ap-northeast-2
+          eb init -p python-3.7 youmo --region ap-northeast-2
       # Deploy to (or Create) the Elastic Beanstalk environment
       - name: Create test environment & deploy
         run: |
