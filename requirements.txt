@@ -62,7 +62,7 @@ pyzmq==22.1.0
 requests==2.25.1
 scikit-image==0.18.1
 scipy==1.6.3
-setuptools==49.6.0.post20210108
+setuptools==49.6.0
 six==1.16.0
 tifffile==2021.4.8
 toolz==0.11.1
