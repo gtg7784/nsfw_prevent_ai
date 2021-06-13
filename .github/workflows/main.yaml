@@ -86,4 +86,4 @@ jobs:
       # Deploy to (or Create) the Elastic Beanstalk environment
       - name: Create test environment & deploy
         run: |
-          (eb use test-environment && eb status test-environment && eb deploy) || eb create test-environment
+          (eb use youmo-environment && eb status youmo-environment && eb deploy) || eb create youmo-environment
