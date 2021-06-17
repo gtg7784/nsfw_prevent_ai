@@ -40,7 +40,7 @@ def image_inference():
         else:
             img = cv2.imread(filename)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            dst = cv2.blur(img,(150, 150))
+            dst = cv2.blur(img,(250, 250))
             dstImg = Image.fromarray(dst)
             draw = ImageDraw.Draw(dstImg)
             font = ImageFont.truetype('./font/SpoqaHanSansNeo-Regular.ttf', 60)
