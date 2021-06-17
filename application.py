@@ -1,6 +1,7 @@
 # coding = utf-8
  
 import cv2, json, os
+from flask_cors import CORS
 from flask import Flask, request, send_from_directory
 from werkzeug.utils import secure_filename  
 from PIL import Image, ImageDraw, ImageFont
@@ -9,6 +10,7 @@ from videoprops import get_video_properties
 
 
 app = Flask(__name__)
+CORS(app)
 
 classifier = NudeClassifier()
 
