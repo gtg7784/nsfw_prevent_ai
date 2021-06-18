@@ -4,8 +4,9 @@ import boto3
 import cv2
 import json
 import os
-from flask_cors import CORS
 from flask import Flask, request, send_from_directory
+from flask_ngrok import run_with_ngrok
+from flask_cors import CORS
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from PIL import Image, ImageDraw, ImageFont
@@ -16,6 +17,7 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
+run_with_ngrok(app)
 
 classifier = NudeClassifier()
 
