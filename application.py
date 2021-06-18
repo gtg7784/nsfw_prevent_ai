@@ -1,18 +1,26 @@
 # coding = utf-8
- 
-import cv2, json, os
+
+import boto3
+import cv2
+import json
+import os
 from flask_cors import CORS
 from flask import Flask, request, send_from_directory
-from werkzeug.utils import secure_filename  
+from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
 from PIL import Image, ImageDraw, ImageFont
-from nudenet import NudeClassifier
 from videoprops import get_video_properties
+from nudenet import NudeClassifier
 
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
 classifier = NudeClassifier()
+
+s3 = boto3.client('s3', aws_access_key_id=os.getenv('AWS_ACCESS_KEY'), aws_secret_access_key=os.getenv('AWS_SECRET_KEY'))
+BUCKET_NAME=os.getenv('AWS_BUCKET_NAME')
 
 @app.route('/')
 def home():
@@ -34,12 +42,13 @@ def image_inference():
 
     preds = classifier.classify(original_files, batch_size=32)
 
-    for filename in preds:
+    for index, filename in enumerate(preds):
         pred = preds.get(filename)
 
         if(pred['safe'] > pred['unsafe']):
             result.append({'unsafe': False})
         else:
+            f = uploadedFiles[index]
             img = cv2.imread(filename)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             dst = cv2.blur(img,(250, 250))
@@ -51,7 +60,16 @@ def image_inference():
             w, h = draw.textsize(msg, font=font)
             draw.text(((W-w)/2, (H-h)/2), msg, (255, 0, 0), font=font)
             dstImg.save('./static/'+secure_filename(f.filename))
-            result.append({'unsafe': True, 'url': request.host_url+'static/'+secure_filename(f.filename)})
+
+            s3.upload_file(
+                Bucket=BUCKET_NAME,
+                Filename='./static/'+secure_filename(f.filename),
+                Key=secure_filename(f.filename)
+            )
+
+            os.remove('./static/'+secure_filename(f.filename))
+            
+            result.append({'unsafe': True, 'url': 'https://youmo.s3.ap-northeast-2.amazonaws.com/'+secure_filename(f.filename)})
 
         os.remove(filename)
 
