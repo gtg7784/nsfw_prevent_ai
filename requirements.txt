@@ -15,7 +15,6 @@ dask==2021.6.0
 decorator==5.0.9
 Flask==2.0.1
 Flask-Cors==3.0.10
-flask-ngrok==0.0.25
 fsspec==2021.6.0
 get-video-properties==0.1.1
 idna==2.10
