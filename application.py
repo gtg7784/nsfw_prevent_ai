@@ -64,7 +64,8 @@ def image_inference():
             s3.upload_file(
                 Bucket=BUCKET_NAME,
                 Filename='./static/'+secure_filename(f.filename),
-                Key=secure_filename(f.filename)
+                Key=secure_filename(f.filename),
+		ExtraArgs={'ACL': 'public-read'}
             )
 
             os.remove('./static/'+secure_filename(f.filename))
