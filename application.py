@@ -69,7 +69,7 @@ def image_inference():
 
             os.remove('./static/'+secure_filename(f.filename))
             
-            result.append({'unsafe': True, 'url': 'https://youmo.s3.ap-northeast-2.amazonaws.com/'+secure_filename(f.filename)})
+            result.append({'unsafe': True, 'url': 'https://youmocdn.transign.co/'+secure_filename(f.filename)})
 
         os.remove(filename)
 
