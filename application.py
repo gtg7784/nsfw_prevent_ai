@@ -1,26 +1,19 @@
 # coding = utf-8
 
-import boto3
 import cv2
 import json
 import os
 from flask import Flask, request, send_from_directory
 from flask_cors import CORS
-from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from PIL import Image, ImageDraw, ImageFont
 from videoprops import get_video_properties
 from nudenet import NudeClassifier
 
-load_dotenv()
-
 app = Flask(__name__)
 CORS(app)
 
 classifier = NudeClassifier()
-
-s3 = boto3.client('s3', aws_access_key_id=os.getenv('AWS_ACCESS_KEY'), aws_secret_access_key=os.getenv('AWS_SECRET_KEY'))
-BUCKET_NAME=os.getenv('AWS_BUCKET_NAME')
 
 @app.route('/')
 def home():
@@ -60,17 +53,8 @@ def image_inference():
             w, h = draw.textsize(msg, font=font)
             draw.text(((W-w)/2, (H-h)/2), msg, (255, 0, 0), font=font)
             dstImg.save('./static/'+secure_filename(f.filename))
-
-            s3.upload_file(
-                Bucket=BUCKET_NAME,
-                Filename='./static/'+secure_filename(f.filename),
-                Key=secure_filename(f.filename),
-		ExtraArgs={'ACL': 'public-read'}
-            )
-
-            os.remove('./static/'+secure_filename(f.filename))
             
-            result.append({'unsafe': True, 'url': 'https://youmocdn.transign.co/'+secure_filename(f.filename)})
+            result.append({'unsafe': True, 'url': f'{request.host_url}/static/{secure_filename(f.filename)}'})
 
         os.remove(filename)
 
