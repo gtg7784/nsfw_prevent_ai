@@ -94,6 +94,21 @@ class Classifier:
 
         return return_preds
 
+    def classify_image(
+        self,
+        img,
+        image_size=(256, 256),
+        categories=["unsafe", "safe"],
+    ):
+        pred = []
+        model_pred = self.nsfw_model.run(
+                [self.nsfw_model.get_outputs()[0].name],
+                {self.nsfw_model.get_inputs()[0].name: img},
+            )[0]
+        pred += np.argsort(model_pred, axis=1).tolist()
+
+        print(pred)
+
     def classify(
         self,
         image_paths=[],
@@ -121,6 +136,7 @@ class Classifier:
         preds = []
         model_preds = []
         while len(loaded_images):
+            print(loaded_images[:batch_size])
             _model_preds = self.nsfw_model.run(
                 [self.nsfw_model.get_outputs()[0].name],
                 {self.nsfw_model.get_inputs()[0].name: loaded_images[:batch_size]},

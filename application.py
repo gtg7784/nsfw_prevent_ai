@@ -3,12 +3,19 @@
 import cv2
 import json
 import os
+import glob
 from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from PIL import Image, ImageDraw, ImageFont
 from videoprops import get_video_properties
 from nudenet import NudeClassifier
+import base64
+from io import BytesIO
+from PIL import Image
+import numpy as np
+import pydload
+import onnxruntime
 
 app = Flask(__name__)
 CORS(app)
@@ -19,92 +26,33 @@ classifier = NudeClassifier()
 def home():
     return 'hello'
 
-@app.route('/static/<path:path>', methods=['GET'])
-def static_dir(path):
-    return send_from_directory('static', path)
+@app.route('/classify', methods=['POST'])
+def b64_image_inference():
+    b64_image = request.json['image']
 
-@app.route('/upload/files', methods=['POST'])
-def image_inference():
-    uploadedFiles = request.files.getlist('file[]')
-    original_files = []
-    result = []
+    imgdata = base64.b64decode(b64_image)
 
-    for f in uploadedFiles:
-        f.save('./files/'+secure_filename(f.filename))
-        original_files.append('./files/'+secure_filename(f.filename))
+    img = Image.open(BytesIO(imgdata))
+    img = img.convert("RGB")
+    img = np.asarray(img)
 
-    preds = classifier.classify(original_files, batch_size=32)
+    x = np.asarray(img, dtype='float32')
 
-    for index, filename in enumerate(preds):
-        pred = preds.get(filename)
+    if len(x.shape) == 3:
+        x = x.transpose(2, 0, 1)
+    elif len(x.shape) == 2:
+        x = x.reshape((1, x.shape[0], x.shape[1]))
 
-        if(pred['safe'] > pred['unsafe']):
-            result.append({'unsafe': False})
-        else:
-            f = uploadedFiles[index]
-            img = cv2.imread(filename)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            dst = cv2.blur(img,(250, 250))
-            dstImg = Image.fromarray(dst)
-            draw = ImageDraw.Draw(dstImg)
-            font = ImageFont.truetype('./font/SpoqaHanSansNeo-Regular.ttf', 60)
-            msg = 'Censored'
-            W, H = dstImg.width, dstImg.height
-            w, h = draw.textsize(msg, font=font)
-            draw.text(((W-w)/2, (H-h)/2), msg, (255, 0, 0), font=font)
-            dstImg.save('./static/'+secure_filename(f.filename))
-            
-            result.append({'unsafe': True, 'url': f'{request.host_url}/static/{secure_filename(f.filename)}'})
+    x /= 255
 
-        os.remove(filename)
+    img_array = np.asarray(x)
 
-    response = app.response_class(
-        response=json.dumps(result),
-        status=200,
-        mimetype='application/json'
-    )
-    return response
-
-@app.route('/upload/video', methods=['POST'])
-def video_inference():
-    f = request.files['file']
-    path = './files/'+secure_filename(f.filename)
-    filename = f.filename.split('.')[0]
-
-    f.save(path)
-
-    props = get_video_properties(path)
-    W, H = int(props['width']), int(props['height'])
+    print(img_array.shape)
     
-    preds = classifier.classify_video(path)
-    preds = preds.get('preds')
-    unsafe, safe = 0, 0
-
-    for pred in preds:
-        unsafe += preds.get(pred)['unsafe']
-        safe += preds.get(pred)['safe']
-
-    if safe > unsafe:
-        result = {
-            'unsafe': False
-        }
-    else:
-        img = Image.new('RGB', (W, H), color='black')
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.truetype('./font/SpoqaHanSansNeo-Regular.ttf', 60)
-        msg = 'Censored'
-        w, h = draw.textsize(msg, font=font)
-        draw.text(((W-w)/2, (H-h)/2), msg, (255, 0, 0), font=font)
-        img.save(f'./static/{filename}.png')
-        result = {
-            'unsafe': True,
-            'url': request.host_url+'static/'+filename+'.png'
-        }
-
-    os.remove(path)
+    # f gets closed when you e
+    preds = classifier.classify_image(img_array)
 
     response = app.response_class(
-        response=json.dumps(result),
         status=200,
         mimetype='application/json'
     )
@@ -112,4 +60,26 @@ def video_inference():
 
 
 if __name__ == '__main__':
+    url = "https://github.com/notAI-tech/NudeNet/releases/download/v0/classifier_model.onnx"
+    home = os.path.expanduser("~")
+    model_folder = os.path.join(home, ".NudeNet/")
+    if not os.path.exists(model_folder):
+        os.mkdir(model_folder)
+
+    model_path = os.path.join(model_folder, os.path.basename(url))
+
+    if not os.path.exists(model_path):
+        print("Downloading the checkpoint to", model_path)
+        pydload.dload(url, save_to_path=model_path, max_time=None)
+    sess = onnxruntime.InferenceSession(model_path)
+    
+    input_name = sess.get_inputs()[0].name
+    print("input name", input_name)
+    input_shape = sess.get_inputs()[0].shape
+    print("input shape", input_shape)
+    input_type = sess.get_inputs()[0].type
+    print("input type", input_type)
+    print("output name", sess.get_outputs()[0].name)
+    print("output shape", sess.get_outputs()[0].shape)
+    print("output type", sess.get_outputs()[0].type)
     app.run()
