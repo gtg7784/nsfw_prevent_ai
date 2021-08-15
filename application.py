@@ -77,51 +77,5 @@ def b64_image_inference():
     )
     return response
 
-@app.route('/upload/video', methods=['POST'])
-def video_inference():
-    f = request.files['file']
-    path = './files/'+secure_filename(f.filename)
-    filename = f.filename.split('.')[0]
-
-    f.save(path)
-
-    props = get_video_properties(path)
-    W, H = int(props['width']), int(props['height'])
-    
-    preds = classifier.classify_video(path)
-    preds = preds.get('preds')
-    unsafe, safe = 0, 0
-
-    for pred in preds:
-        unsafe += preds.get(pred)['unsafe']
-        safe += preds.get(pred)['safe']
-
-    if safe > unsafe:
-        result = {
-            'unsafe': False
-        }
-    else:
-        img = Image.new('RGB', (W, H), color='black')
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.truetype('./font/SpoqaHanSansNeo-Regular.ttf', 60)
-        msg = 'Censored'
-        w, h = draw.textsize(msg, font=font)
-        draw.text(((W-w)/2, (H-h)/2), msg, (255, 0, 0), font=font)
-        img.save(f'./static/{filename}.png')
-        result = {
-            'unsafe': True,
-            'url': request.host_url+'static/'+filename+'.png'
-        }
-
-    os.remove(path)
-
-    response = app.response_class(
-        response=json.dumps(result),
-        status=200,
-        mimetype='application/json'
-    )
-    return response
-
-
 if __name__ == '__main__':
     app.run()
