@@ -3,15 +3,13 @@
 import cv2
 import json
 import os
-from flask import Flask, request, send_from_directory
-from flask_cors import CORS
-from werkzeug.utils import secure_filename
-from PIL import Image, ImageDraw, ImageFont
-from videoprops import get_video_properties
-from nudenet import NudeClassifier
 import base64
 import string
 import random
+from flask import Flask, request
+from flask_cors import CORS
+from PIL import Image, ImageDraw, ImageFont
+from nudenet import NudeClassifier
 from io import BytesIO
 
 app = Flask(__name__)
