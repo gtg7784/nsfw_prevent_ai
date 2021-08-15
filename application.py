@@ -59,10 +59,8 @@ def b64_image_inference():
         dstImg.save(buffered, format="JPEG")
         result_image = base64.b64encode(buffered.getvalue()).decode()
 
-        print(result_image)
-
     response = {
-        'image': image_info +',' + result_image,
+        'image': image_info + ',' + result_image,
         'pred': pred
     }
 
