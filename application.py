@@ -77,48 +77,6 @@ def b64_image_inference():
     )
     return response
 
-@app.route('/upload/files', methods=['POST'])
-def image_inference():
-    uploadedFiles = request.files.getlist('file[]')
-    original_files = []
-    result = []
-
-    for f in uploadedFiles:
-        f.save('./files/'+secure_filename(f.filename))
-        original_files.append('./files/'+secure_filename(f.filename))
-
-    preds = classifier.classify(original_files, batch_size=32)
-
-    for index, filename in enumerate(preds):
-        pred = preds.get(filename)
-
-        if(pred['safe'] > pred['unsafe']):
-            result.append({'unsafe': False})
-        else:
-            f = uploadedFiles[index]
-            img = cv2.imread(filename)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            dst = cv2.blur(img,(250, 250))
-            dstImg = Image.fromarray(dst)
-            draw = ImageDraw.Draw(dstImg)
-            font = ImageFont.truetype('./font/SpoqaHanSansNeo-Regular.ttf', 60)
-            msg = 'Censored'
-            W, H = dstImg.width, dstImg.height
-            w, h = draw.textsize(msg, font=font)
-            draw.text(((W-w)/2, (H-h)/2), msg, (255, 0, 0), font=font)
-            dstImg.save('./static/'+secure_filename(f.filename))
-            
-            result.append({'unsafe': True, 'url': f'{request.host_url}/static/{secure_filename(f.filename)}'})
-
-        os.remove(filename)
-
-    response = app.response_class(
-        response=json.dumps(result),
-        status=200,
-        mimetype='application/json'
-    )
-    return response
-
 @app.route('/upload/video', methods=['POST'])
 def video_inference():
     f = request.files['file']
