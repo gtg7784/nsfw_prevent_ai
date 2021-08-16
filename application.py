@@ -6,7 +6,7 @@ import os
 import base64
 import string
 import random
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 from PIL import Image, ImageDraw, ImageFont
 from nudenet import NudeClassifier
@@ -23,26 +23,20 @@ def home():
 
 @app.route('/classify', methods=['POST'])
 def b64_image_inference():
-    b64_data = request.json['image']
-
-    b64_image = b64_data.split(',')[1]
-    image_info = b64_data.split(',')[0]
-    image_type = image_info.split('image/')[1][:-7]
+    image = request.files['image']
 
     ascii_letters = list(string.ascii_letters)
     random.shuffle(ascii_letters)
-    filedata = base64.b64decode(b64_image)
-    filename = ''.join(ascii_letters[:8]) + '.' + image_type
-    filepath = f"./files/{filename}"
-    with open(filepath, 'wb') as f:
-        f.write(filedata)
+    filename = ''.join(ascii_letters[:8]) + '.jpg'
+    filepath = f"./static/{filename}"
+    image.save(filepath)
 
     preds = classifier.classify(filepath, batch_size=32)
 
     pred = preds.get(filepath)
 
     if(pred['safe'] > pred['unsafe']):
-        result_image = b64_image
+        result_image = filename
     else:
         img = cv2.imread(filepath)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -54,24 +48,13 @@ def b64_image_inference():
         W, H = dstImg.width, dstImg.height
         w, h = draw.textsize(msg, font=font)
         draw.text(((W-w)/2, (H-h)/2), msg, (255, 0, 0), font=font)
+        dst_filename = f'censored_{filename}'
 
-        buffered = BytesIO()
-        dstImg.save(buffered, format="JPEG")
-        result_image = base64.b64encode(buffered.getvalue()).decode()
+        dstImg.save(f'./static/{dst_filename}')
 
-    response = {
-        'image': image_info + ',' + result_image,
-        'pred': pred
-    }
+        result_image = dst_filename
 
-    os.remove(filepath)
-
-    response = app.response_class(
-        response=json.dumps(response),
-        status=200,
-        mimetype='application/json'
-    )
-    return response
+    return send_from_directory('static', result_image)
 
 if __name__ == '__main__':
     app.run()
