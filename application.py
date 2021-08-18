@@ -11,6 +11,24 @@ from nudenet import NudeClassifier
 import hashlib
 import atexit
 from apscheduler.schedulers.background import BackgroundScheduler
+from logging.config import dictConfig
+
+dictConfig({
+    'version': 1,
+    'formatters': {'default': {
+        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+    }},
+    'handlers': {'wsgi': {
+        'class': 'logging.StreamHandler',
+        'stream': 'ext://flask.logging.wsgi_errors_stream',
+        'formatter': 'default'
+    }},
+    'root': {
+        'level': 'INFO',
+        'handlers': ['wsgi']
+    }
+})
+
 
 app = Flask(__name__)
 CORS(app)
@@ -46,6 +64,8 @@ def b64_image_inference():
     preds = classifier.classify(filepath, batch_size=32)
 
     pred = preds.get(filepath)
+
+    app.logger.info('%s failed to log in', pred)
 
     if(pred['safe'] > pred['unsafe']):
         return send_from_directory('static', filename)
