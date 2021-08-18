@@ -29,7 +29,7 @@ def b64_image_inference():
 
     md5 = hashlib.md5(filebytes)
 
-    file_extention = image.filename.split('.')[-1]
+    file_extention = image.content_type.split('/')[-1]
     filename = md5.hexdigest() + '.' + file_extention
     filepath = f"./static/{filename}"
 
