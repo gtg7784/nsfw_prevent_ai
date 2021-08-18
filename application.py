@@ -24,12 +24,13 @@ def home():
 @app.route('/classify', methods=['POST'])
 def b64_image_inference():
     image = request.files['image']
+    content_type = request.form['content_type']
 
     filebytes = image.stream.read()
 
     md5 = hashlib.md5(filebytes)
 
-    file_extention = image.content_type.split('/')[-1]
+    file_extention = content_type.split('/')[-1]
     filename = md5.hexdigest() + '.' + file_extention
     filepath = f"./static/{filename}"
 
