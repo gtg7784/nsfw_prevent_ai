@@ -26,6 +26,9 @@ def b64_image_inference():
     image = request.files['image']
     content_type = request.form['content_type']
 
+    if(content_type.split('/')[0] != 'image'):
+        return app.response_class(status=400)
+
     filebytes = image.stream.read()
 
     md5 = hashlib.md5(filebytes)
