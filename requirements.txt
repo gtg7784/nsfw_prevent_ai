@@ -23,7 +23,7 @@ idna==2.10
 imagecodecs==2021.3.31
 imageio==2.9.0
 ipykernel==5.5.5
-ipython==7.24.1
+ipython==7.31.1
 ipython-genutils==0.2.0
 itsdangerous==2.0.1
 jedi==0.18.0
